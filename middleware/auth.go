@@ -71,6 +71,9 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cfg := config.AppConfig
 		requestOrigin := r.Header.Get("Origin")
+		fmt.Println("Request Origin:", requestOrigin)
+		fmt.Println("Allowed Origins from config:", cfg.AllowedOrigins)
+
 
 		// Non-browser requests (curl, server-to-server) often have no Origin.
 		// CORS is a browser-enforced policy, so we can skip origin checks here.
@@ -112,8 +115,6 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if allowedOrigin == "" {
-			fmt.Println("Request Origin:", requestOrigin)
-			fmt.Println("Allowed Origins from config:", cfg.AllowedOrigins)
 			http.Error(w, `{"error": "CORS: Origin not allowed"}`, http.StatusForbidden)
 			return
 		}

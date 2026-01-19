@@ -68,49 +68,59 @@ func AdminOnly(next http.HandlerFunc) http.HandlerFunc {
 // CORS middleware for frontend requests
 func CORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Get allowed origins from config
-		allowedOrigins := config.AppConfig.AllowedOrigins
-		environment := config.AppConfig.Environment
+		cfg := config.AppConfig
 		requestOrigin := r.Header.Get("Origin")
-		
-		// Determine which origin to allow
-		var allowedOrigin string
-		
-		if allowedOrigins == "*" {
-			// Reject * in all environments for security
-			if environment == "production" {
-				http.Error(w, `{"error": "CORS misconfiguration: ALLOWED_ORIGINS cannot be * in production"}`, http.StatusInternalServerError)
+
+		// Non-browser requests (curl, server-to-server) often have no Origin.
+		// CORS is a browser-enforced policy, so we can skip origin checks here.
+		if requestOrigin == "" {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
 				return
 			}
-			// Even in development, warn but allow (for backward compatibility)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		allowedOrigins := strings.TrimSpace(cfg.AllowedOrigins)
+		if allowedOrigins == "" {
+			http.Error(w, `{"error": "CORS misconfiguration: ALLOWED_ORIGINS is empty"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Disallow wildcard in production.
+		if allowedOrigins == "*" && cfg.Environment == "production" {
+			http.Error(w, `{"error": "CORS misconfiguration: ALLOWED_ORIGINS cannot be * in production"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Determine allowed origin (must echo back ONE origin, never a comma-separated list)
+		allowedOrigin := ""
+		if allowedOrigins == "*" {
 			allowedOrigin = "*"
-		} else if allowedOrigins != "" {
-			// Check if request origin is in the allowed list
-			allowedList := strings.Split(allowedOrigins, ",")
-			for _, origin := range allowedList {
+		} else {
+			for _, origin := range strings.Split(allowedOrigins, ",") {
 				origin = strings.TrimSpace(origin)
-				if origin == requestOrigin {
+				if origin != "" && origin == requestOrigin {
 					allowedOrigin = origin
 					break
 				}
 			}
-			
-			// If no match found and we have a request origin
-			if allowedOrigin == "" && requestOrigin != "" {
-				// Always reject unauthorized origins (both dev and prod)
-				http.Error(w, `{"error": "CORS: Origin not allowed"}`, http.StatusForbidden)
-				return
-			}
 		}
-		
+
+		if allowedOrigin == "" {
+			http.Error(w, `{"error": "CORS: Origin not allowed"}`, http.StatusForbidden)
+			return
+		}
+
 		// Set CORS headers
-		if allowedOrigin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
-		}
+		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
-		// Only set credentials if not using wildcard
+		// Credentials are only valid when not using wildcard
 		if allowedOrigin != "*" {
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		}

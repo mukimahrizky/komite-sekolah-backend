@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"komite-sekolah/config"
@@ -120,8 +121,8 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(fmt.Sprintf(
-				"CORS: Origin not allowed\nRequest Origin: %s\nAllowed Origins: %s\n",
-				requestOrigin, cfg.AllowedOrigins,
+				"CORS: Origin not allowed\nRequest Origin: %s\nAllowed Origins: %s\nAllowed Origins: %s\n",
+				requestOrigin, cfg.AllowedOrigins, os.Getenv("ALLOWED_ORIGINS"),
 			)))
 			return
 		}

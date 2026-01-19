@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -71,9 +71,8 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cfg := config.AppConfig
 		requestOrigin := r.Header.Get("Origin")
-		fmt.Println("Request Origin:", requestOrigin)
-		fmt.Println("Allowed Origins from config:", cfg.AllowedOrigins)
-
+		log.Println("Request Origin:", requestOrigin)
+		log.Println("Allowed Origins from config:", cfg.AllowedOrigins)
 
 		// Non-browser requests (curl, server-to-server) often have no Origin.
 		// CORS is a browser-enforced policy, so we can skip origin checks here.

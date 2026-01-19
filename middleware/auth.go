@@ -2,9 +2,7 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"komite-sekolah/config"
@@ -112,18 +110,8 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		// if allowedOrigin == "" {
-		// 	http.Error(w, `{"error": "CORS: Origin not allowed"}`, http.StatusForbidden)
-		// 	return
-		// }
-
 		if allowedOrigin == "" {
-			w.Header().Set("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(fmt.Sprintf(
-				"CORS: Origin not allowed\nRequest Origin: %s\nAllowed Origins: %s\nAllowed Origins: %s\nDB Name: %s\n",
-				requestOrigin, cfg.AllowedOrigins, os.Getenv("ALLOWED_ORIGINS"), os.Getenv("DB_NAME"),
-			)))
+			http.Error(w, `{"error": "CORS: Origin not allowed"}`, http.StatusForbidden)
 			return
 		}
 

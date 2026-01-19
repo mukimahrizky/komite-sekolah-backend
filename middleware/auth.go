@@ -121,8 +121,8 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(fmt.Sprintf(
-				"CORS: Origin not allowed\nRequest Origin: %s\nAllowed Origins: %s\nAllowed Origins: %s\n",
-				requestOrigin, cfg.AllowedOrigins, os.Getenv("ALLOWED_ORIGINS"),
+				"CORS: Origin not allowed\nRequest Origin: %s\nAllowed Origins: %s\nAllowed Origins: %s\nDB Name: %s\n",
+				requestOrigin, cfg.AllowedOrigins, os.Getenv("ALLOWED_ORIGINS"), os.Getenv("DB_NAME"),
 			)))
 			return
 		}
